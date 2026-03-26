@@ -3,26 +3,27 @@ import pandas as pd
 import math
 
 # --- 頁面基本設定 ---
-st.set_page_config(page_title="CFP 勞保年金決策系統 (全情境專業版)", layout="wide")
+st.set_page_config(page_title="CFP 勞保年金決策系統 (法定級距專業版)", layout="wide")
 
 # --- 側邊欄：參數設定 ---
 st.sidebar.header("⚙️ 決策參數設定")
 
 st.sidebar.subheader("1. 薪資與年資變數")
+# 嚴格依循勞工保險投保薪資分級表 (11級)
 salary_options = [29500, 30300, 31800, 33300, 34800, 36300, 38200, 40100, 42000, 43900, 45800]
 
 avg_salary_60 = st.sidebar.select_slider(
     "變數A：最高60個月平均薪資", 
     options=salary_options, 
     value=45800,
-    help="勞保局計算退休金的基準"
+    help="勞保局計算退休金的基準 (法定級距)"
 )
 
 current_salary = st.sidebar.select_slider(
     "變數B：目前實際投保薪資", 
     options=salary_options, 
     value=29500,
-    help="決定延後退休期間每個月要繳多少保費"
+    help="決定延後退休期間每個月要繳多少保費 (法定級距)"
 )
 
 base_years = st.sidebar.number_input("60歲時已累積年資 (年)", min_value=15, max_value=50, value=30)
@@ -81,7 +82,7 @@ for age in range(60, 101): # 延展至 100 歲
 df_trend = pd.DataFrame(data)
 
 # --- 建立頁籤 ---
-st.title("🧮 退休族勞保請領決策系統 (全情境專業版)")
+st.title("🧮 退休族勞保請領決策系統 (法定級距專業版)")
 tab1, tab2 = st.tabs(["📊 單一情境總結與趨勢 (至100歲)", "🗓️ 各歲數全情境打平年限表"])
 
 # === 頁籤 1 內容 ===
@@ -105,12 +106,13 @@ with tab1:
     st.line_chart(df_trend.set_index("年齡")[["方案A (60歲領) 累計金額", f"方案B ({target_age}歲領) 累計金額"]])
 
     with st.expander("展開查看 60-100 歲詳細數據變化表"):
-        st.dataframe(df_trend.style.format("{:,}"), use_container_width=True)
+        # 套用新語法 width="stretch"
+        st.dataframe(df_trend.style.format("{:,}"), width="stretch")
 
 # === 頁籤 2 內容 ===
 with tab2:
     st.subheader("🗓️ 全情境打平年齡矩陣表 (比較 61~70 歲請領)")
-    st.markdown("此表依據左側設定的「變數A (平均薪資)」與「變數B (實際投保薪資)」自動運算。讓您一眼看出不論延後到幾歲，掛在公司或工會的真實回本年紀。")
+    st.markdown("此表自動計算延後至各年紀請領的「真實回本年紀」，並以國人平均預期壽命 **85 歲** 為基準，為您試算出長期累積的總淨額（已扣除保費成本）。")
     
     matrix_data = []
     
@@ -125,28 +127,40 @@ with tab2:
         opp_cost = monthly_A * d_months
         m_adv = m_B - monthly_A
         
+        # 預期壽命 85 歲的領取月數 (若請領年紀超過 85，則以 0 計算)
+        months_to_85 = (85 - t_age) * 12 if 85 > t_age else 0
+        
         # 運算: 公司投保
         cost_company = current_salary * 0.12 * 0.20
         total_p_company = cost_company * d_months
         catch_up_company = opp_cost + total_p_company
+        # 計算 85 歲總淨額 = (月領額 * 活到85歲的領取月數) - 延後期間多付的總保費
+        net_total_85_comp = (m_B * months_to_85) - total_p_company
+        
         if m_adv > 0:
             be_company = t_age + (catch_up_company / (m_adv * 12))
-            row_data["公司投保打平年齡"] = f"{be_company:.1f} 歲"
+            row_data["公司投保-打平年齡"] = f"{be_company:.1f} 歲"
         else:
-            row_data["公司投保打平年齡"] = "無法打平"
+            row_data["公司投保-打平年齡"] = "無法打平"
+        row_data["公司投保-85歲累計總額"] = f"${round(net_total_85_comp):,}"
             
         # 運算: 職業工會
         cost_union = current_salary * 0.11 * 0.60
         total_p_union = cost_union * d_months
         catch_up_union = opp_cost + total_p_union
+        # 計算 85 歲總淨額 = (月領額 * 活到85歲的領取月數) - 延後期間多付的總保費
+        net_total_85_union = (m_B * months_to_85) - total_p_union
+        
         if m_adv > 0:
             be_union = t_age + (catch_up_union / (m_adv * 12))
-            row_data["職業工會打平年齡"] = f"{be_union:.1f} 歲"
+            row_data["職業工會-打平年齡"] = f"{be_union:.1f} 歲"
         else:
-            row_data["職業工會打平年齡"] = "無法打平"
+            row_data["職業工會-打平年齡"] = "無法打平"
+        row_data["職業工會-85歲累計總額"] = f"${round(net_total_85_union):,}"
             
         matrix_data.append(row_data)
         
     df_matrix = pd.DataFrame(matrix_data)
-    # 隱藏預設 index，讓畫面更乾淨
-    st.dataframe(df_matrix.set_index("計畫請領年紀"), use_container_width=True)
+    
+    # 隱藏預設 index，並套用新語法 width="stretch"
+    st.dataframe(df_matrix.set_index("計畫請領年紀"), width="stretch")
