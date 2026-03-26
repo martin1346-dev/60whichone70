@@ -105,7 +105,7 @@ with tab1:
     st.line_chart(df_trend.set_index("年齡")[["方案A (60歲領) 累計金額", f"方案B ({target_age}歲領) 累計金額"]])
 
     with st.expander("展開查看 60-100 歲詳細數據變化表"):
-        st.dataframe(df_trend.style.format("{:,}"), use_container_width=True)
+    st.dataframe(df_trend.style.format("{:,}"), width="stretch")
 
 # === 頁籤 2 內容 ===
 with tab2:
@@ -149,4 +149,4 @@ with tab2:
         
     df_matrix = pd.DataFrame(matrix_data)
     # 隱藏預設 index，讓畫面更乾淨
-    st.dataframe(df_matrix.set_index("計畫請領年紀"), use_container_width=True)
+    st.dataframe(df_matrix.set_index("計畫請領年紀"), width="stretch")
