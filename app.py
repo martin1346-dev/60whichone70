@@ -105,8 +105,9 @@ with tab1:
     st.line_chart(df_trend.set_index("年齡")[["方案A (60歲領) 累計金額", f"方案B ({target_age}歲領) 累計金額"]])
 
     with st.expander("展開查看 60-100 歲詳細數據變化表"):
-    st.dataframe(df_trend.style.format("{:,}"), use_container_width=True)
-    # === 頁籤 2 內容 ===
+        st.dataframe(df_trend.style.format("{:,}"), use_container_width=True)
+
+# === 頁籤 2 內容 ===
 with tab2:
     st.subheader("🗓️ 全情境打平年齡矩陣表 (比較 61~70 歲請領)")
     st.markdown("此表依據左側設定的「變數A (平均薪資)」與「變數B (實際投保薪資)」自動運算。讓您一眼看出不論延後到幾歲，掛在公司或工會的真實回本年紀。")
